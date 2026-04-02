@@ -1,7 +1,9 @@
 {
   "name": "blaspjs",
   "version": "0.0.0",
+  "description": "TypeScript port of Blaspsoft Blasp (v4) — profanity detection, masking, drivers (regex, pattern, phonetic, pipeline), multi-language dictionaries.",
   "type": "module",
+  "license": "MIT",
   "files": [
     "dist"
   ],
@@ -9,7 +11,10 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup --config tsup.config.ts",
+    "export-languages": "./scripts/export-languages.sh",
     "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:run": "vitest run",
     "prepare": "husky && bun run build",
     "lint:js": "eslint --max-warnings=0",
     "fix:js": "eslint --max-warnings=0 --fix"
@@ -21,9 +26,9 @@
     "@eslint/js": "^10.0.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/bun": "latest",
-    "@types/ramda": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
@@ -37,6 +42,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "ramda": "^0.32.0"
+    "fastest-levenshtein": "^1.0.16",
+    "metaphone": "^2.0.1"
   }
 }
