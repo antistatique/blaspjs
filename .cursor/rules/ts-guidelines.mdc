@@ -1,0 +1,237 @@
+---
+description: TypeScript best practices
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript + Bun + React Agent Rules
+
+## Project Context
+You are an expert TypeScript developer working with Bun runtime and React. This project is a Web App.
+
+## Code Style & Structure
+### TypeScript Defaults
+- Use TypeScript strict mode with `strict: true` in `tsconfig.json` — enables `strictNullChecks`, `noImplicitAny`, and other safety checks.
+- Use `const` by default; `let` only when reassignment is needed. Never use `var`.
+- Prefer `type` over `interface` — use `type` for object shapes, unions, intersections, and mapped types.
+- Prefer `unknown` over `any` — it forces type narrowing before use and catches bugs at compile time.
+- Avoid `any` — use `unknown` with type guards when the type is truly unknown. Use generics when the type varies.
+- Use discriminated unions for state management over boolean flags.
+- Prefer small, focused functions under 30 lines. Extract helpers when logic grows.
+- Use `readonly` for arrays and properties that should not be mutated.
+- Prefer explicit return types on exported functions for documentation and faster type-checking.
+- Handle `null` and `undefined` explicitly where strict applies.
+- Narrow before use — use type guards, `in`, or assertion functions instead of `as` when possible.
+
+### Async
+- Prefer `async/await` over raw Promises.
+- Type async functions explicitly when the return type is non-obvious.
+- Use `Promise<Result | Error>` or a Result type for functions that can fail.
+
+### Bun Native APIs
+- Use `Bun.file()` and `Bun.write()` for fast file I/O.
+- Use `Bun.env` instead of `process.env` for type-safe env access.
+- Use `bun install` with its lockfile (`bun.lockb`) — do not mix with npm/yarn/pnpm.
+- Import `.toml`, `.txt`, `.json` files directly — Bun handles them natively.
+- Use `Bun.password.hash()` / `Bun.password.verify()` instead of bcrypt.
+- Use `Bun.spawn()` for subprocesses instead of `child_process`.
+- Use `Bun.Transpiler` for runtime code transformation.
+- Prefer Bun macros for compile-time code execution.
+
+### Google TypeScript Style Guide
+- Use Google-style JSDoc docstrings for every public module, class, function, and method.
+- Annotate all functions, methods, class members, and variables with specific TypeScript types.
+- Structure docstrings with Args, Returns, and Throws sections for parameters, return values, and exceptions.
+- Use `type` for object shapes and unions/aliases: `type User = { id: string; name: string }` vs `type Status = 'active' | 'inactive'`.
+- Write `@param` and `@returns` JSDoc for all public APIs: `/** @param id - User identifier. @returns The user record or null if not found. */`.
+- Annotate return types explicitly on public APIs: `async function fetchUser(id: string): Promise<User | null>` — never rely on inference for exported functions.
+- Prefer `unknown` over `any`; narrow with type guards: `if (typeof val === 'string') { processString(val); }`.
+
+### Functional Patterns
+- Prefer pure functions: given the same inputs, always return the same output with no side effects.
+- Use immutable data structures; avoid mutating variables or objects after creation.
+- Favor function composition and pipelines over deeply nested logic.
+- Use higher-order functions (map, filter, reduce) instead of manual loops for collection transformations.
+- Separate side effects (I/O, network, state) from pure computation; push effects to the edges of your program.
+- Prefer declarative code that describes *what* to compute rather than *how* to compute it step by step.
+- Use closures and partial application to create reusable, configurable function factories.
+
+## Linting & Formatting
+### ESLint
+- Use ESLint flat config (`eslint.config.mjs`). Extend recommended configs for your framework.
+- Run `eslint --fix .` for auto-fixable issues. Run `eslint .` in CI without `--fix`.
+- Use `typescript-eslint` with `strict` and `stylistic` configs — enable type-checked rules with `parserOptions.project` for deep type analysis.
+- Configure `no-unused-vars`, `no-console`, `prefer-const` as errors — catch real issues, not style nits.
+
+### Formatting (Prettier)
+- **Single quotes** for strings: `'hello'` not `"hello"`.
+- **Trailing commas** in ES5 style (objects, arrays, function params).
+- **Arrow parens**: Omit parentheses for single parameters — ✅ `x => x * 2`, ❌ `(x) => x * 2`.
+- Prefer `const` arrow functions over `function` declarations. Use implicit return when the body is a single expression:
+
+```typescript
+// ❌ Avoid
+function greet(name: string) {
+  return `Hello, ${name}`;
+}
+const double = (n: number) => {
+  return n * 2;
+};
+
+// ✅ Prefer
+const greet = (name: string) => `Hello, ${name}`;
+const double = (n: number) => n * 2;
+const items = ids.map(id => fetchItem(id));
+```
+
+### Import Order
+Group imports in this order, with a **blank line between each group**:
+
+1. **Node.js built-ins** — `fs`, `path`, `crypto`, `events`, `http`, `url`, `util`, etc.
+2. **React** — `react`, `react-dom` (exact `react` first)
+3. **Third-party packages** — Any npm package (e.g. `phaser`, `zustand`, `clsx`, `motion`)
+4. **Aliases** — Paths starting with `@` (e.g. `@/components`, `@app/utils`)
+5. **Relative imports** — `./` or `../` (components, hooks, utils, etc.) — **excluding** `.css`
+6. **CSS** — All `.css` imports last
+
+Sort named imports alphabetically within each group.
+
+```typescript
+import { readFileSync } from 'fs';
+import path from 'path';
+
+import React from 'react';
+import { useCallback } from 'react';
+
+import { clsx } from 'clsx';
+import Phaser from 'phaser';
+import { useStore } from 'zustand';
+
+import { Button } from '@/components/Button';
+import { useGame } from '@/hooks/useGame';
+
+import { GameScene } from './GameScene';
+import { Player } from './entities/Player';
+
+import './Game.css';
+import '../styles/global.css';
+```
+
+## Styling
+### Tailwind CSS
+- Use `@apply` in component CSS only as a last resort — prefer utility classes in templates.
+- Use the `cm()` (clsx + twMerge) utility for conditional class merging — it resolves Tailwind class conflicts correctly.
+- Use `tailwind.config.ts` to define design tokens: colors, spacing, fonts, breakpoints.
+- Use component extraction to avoid repeating class combinations — encapsulate repeated patterns in reusable components or partials.
+- Use responsive prefixes (`sm:`, `md:`, `lg:`) for mobile-first responsive design and mobile exceptions with `max-sm:`, `max-md:`, `max-lg:`.
+- Use `dark:` variant for dark mode support. Use `group-*` and `peer-*` for conditional styling.
+- Use Tailwind utility classes in the order preferred by `prettier-plugin-tailwindcss` (layout → spacing → sizing → typography → colors → borders → effects). The plugin will sort them on format; when writing manually, group logically (e.g. `flex items-center gap-4 p-4 text-lg text-gray-900`).
+
+## React
+- Define a `Props` type for every component and type the function signature: `const Button = ({ label, onClick }: Props) => ...`.
+- Use generic hooks for type safety: `useState<User | null>(null)`, `useRef<HTMLInputElement>(null)`, `useReducer<Reducer<State, Action>>`.
+- Type event handlers explicitly: `React.MouseEvent<HTMLButtonElement>`, `React.ChangeEvent<HTMLInputElement>`, `React.FormEvent<HTMLFormElement>`.
+- Use `React.FC` sparingly — prefer explicit return types: `const Card = ({ title }: Props): React.ReactElement => ...`. Use generic components: `function List<T>({ items, renderItem }: ListProps<T>)`.
+- Prefer `type Props` and arrow functions over `React.FC<Props>` — define props as a type and use `const` arrow functions for components.
+- Use `React.ComponentPropsWithoutRef<'button'>` to extend native HTML element props when wrapping built-in elements.
+- Type children explicitly: use `React.ReactNode` for renderable content, `React.ReactElement` when only JSX elements are accepted.
+- Create typed context with a factory: `createContext<ContextType | null>(null)` and a custom hook that throws if used outside the provider.
+- Use discriminated unions for component variants: `type Props = { variant: 'link'; href: string } | { variant: 'button'; onClick: () => void }`.
+
+## Architecture
+### Web App Architecture
+- Separate UI components, business logic, and data fetching into distinct layers.
+- Choose rendering strategy intentionally: SSR for SEO, CSR for interactivity, SSG for static content.
+- Use server-side rendering (SSR) or static generation (SSG) for initial page loads — hydrate on the client for interactivity.
+- Implement client-side routing with proper loading and error states for each route.
+- Use a state management approach appropriate to complexity — local state first, global store when needed.
+
+## Error Handling
+### Error Boundaries
+- Use Error Boundary patterns for UI error containment. Prevent a single component crash from taking down the entire page.
+- Implement fallback UIs that help users recover: retry buttons, navigation links, error descriptions.
+- Place error boundaries at route and feature boundaries — each boundary should show a relevant fallback UI and report to error monitoring.
+- Place error boundaries at strategic points: route level, feature level, and widget level.
+- Log errors from boundaries to an error reporting service (Sentry, DataDog, etc.) with component stack traces.
+- Reset boundary state on navigation — stale error states confuse users.
+- Show appropriate fallback UIs per boundary: full-page error at route level, inline error at component level.
+
+## Testing
+### Cypress
+- Place end-to-end tests in the `cypress/e2e/` directory using `.cy.ts` files for TypeScript support.
+- Focus tests on critical user flows to validate full application behavior.
+- Configure Cypress using `cypress.config.ts` for TypeScript projects.
+- Use core Cypress commands like `cy.visit()`, `cy.get()`, and `cy.click()` for interactions.
+- Leverage Cypress's built-in retryability and automatic waiting to create reliable, low-maintenance tests.
+- Organize support files in `cypress/support/` to extend Cypress with custom commands and global setups.
+- Run tests in headed or headless mode to support local development and CI/CD integration.
+- Preserve test state across commands using Cypress's chainable API for readable test flows.
+
+### Vitest
+- For TypeScript: Only write Vitest tests when resolving a specific user issue or upon explicit request.
+- Import core functions as `import { describe, it, expect } from 'vitest';`.
+- Use jsdom environment for DOM-related tests and node for others.
+- Write focused, isolated test cases.
+- Configure Vitest coverage with exclusion patterns and multiple report formats.
+- Mock modules with `vi.mock('../db', () => ({ query: vi.fn<[string], Promise<Row[]>>() }))` — use generic type parameters on `vi.fn<TArgs, TReturn>()` for type-safe mock functions.
+- Use `vi.spyOn(obj, 'method').mockResolvedValue(result)` to patch individual methods with typed return values.
+- Assert async results: `await expect(fetchUser('1')).resolves.toMatchObject({ id: '1', name: expect.any(String) })` and `await expect(fetchUser('')).rejects.toThrow('invalid id')`.
+- Use `vi.useFakeTimers()` with `vi.advanceTimersByTime(ms)` to test debounced functions and polling intervals without real delays.
+- Configure per-file environment: `// @vitest-environment jsdom` for DOM tests, `// @vitest-environment node` for server-side code.
+
+## Libraries & Tools
+### Zod
+- Define schemas with `z.object({})` for validation — use `z.infer<typeof schema>` to derive TypeScript types from schemas.
+- Validate at system boundaries: API inputs, form data, environment variables, config files — fail fast with descriptive error messages.
+- Use `z.enum()` for string literals, `z.discriminatedUnion()` for tagged unions, `z.transform()` for parsing and coercion.
+- Use `.parse()` to throw on invalid data, `.safeParse()` to get a Result-like `{ success, data, error }`.
+- Compose schemas: use `.extend()`, `.merge()`, `.pick()`, `.omit()` to build variants from base schemas.
+- Use `.transform()` for coercion and normalization (trimming strings, parsing dates).
+
+### Zustand
+- Create stores with `create()`: define state and actions in a single function. Access with hooks.
+- Keep stores small and focused — one store per domain concern, not one global store.
+- Use selectors (`useStore(state => state.count)`) to subscribe to specific state slices — prevents unnecessary re-renders from unrelated changes.
+- Use selectors to subscribe to specific state slices: `useStore((state) => state.count)` — avoid re-renders from unrelated state changes.
+- Use `immer` middleware for immutable updates on deeply nested state.
+- Define actions inside the store alongside state — colocate state and the logic that modifies it.
+- Use `persist` middleware for localStorage/sessionStorage persistence.
+
+### React Hook Form
+- Use `useForm<FormValues>()` with a schema resolver for type-safe, schema-validated forms.
+- Use `register()` for uncontrolled inputs, `Controller` for controlled components (Select, DatePicker).
+- Use `useFormContext<FormData>()` in nested components with `FormProvider` — maintains full TypeScript types without prop drilling.
+- Use `handleSubmit` wrapper — it validates before calling your submit handler.
+- Use `formState.errors` for field-level error display. Show errors next to the relevant input.
+- Use `watch()` sparingly — prefer `useWatch()` for isolated re-renders on specific fields.
+- Use `defaultValues` to initialize forms. Use `reset()` to clear forms after successful submission.
+
+## Context Management
+### Rules & Context Files
+- Store agent rules in `.cursor/rules/`, `AGENTS.md`, or `.github/copilot-instructions.md` as appropriate.
+- Rules should be prescriptive and actionable — "Use X pattern" not "Consider using X".
+- Keep context files under 200 lines — split into topic-specific files (debugging.md, patterns.md) linked from the main rules file.
+- Keep rules project-specific — include coding standards, architecture conventions, and known patterns.
+- Include negative rules ("Don't use X") to prevent common mistakes specific to your project.
+- Keep rules concise — agents have limited context windows; verbose rules dilute important information.
+
+---
+
+## Quick Checklist
+
+**TypeScript**
+- [ ] Arrow functions over `function` declarations
+- [ ] `type` over `interface`
+- [ ] No `any` (or justified with `// eslint-disable` and comment)
+- [ ] Null/undefined handled explicitly where `strict` applies
+- [ ] Exported functions have clear types
+- [ ] No unnecessary type assertions (`as`)
+
+**Formatting**
+- [ ] Single quotes
+- [ ] No parens around single arrow param
+- [ ] Implicit return for single-expression arrows
+- [ ] Imports grouped and ordered (builtins → React → third-party → @ → relative → .css)
+- [ ] Blank line between import groups
+- [ ] Named imports sorted alphabetically
+- [ ] Trailing commas (ES5)
