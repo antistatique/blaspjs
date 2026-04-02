@@ -1,5 +1,5 @@
 {
-  "name": "blaspjs",
+  "name": "@antistatique/blaspjs",
   "version": "0.0.1",
   "description": "TypeScript port of Blaspsoft Blasp (v4) — profanity detection, masking, drivers (regex, pattern, phonetic, pipeline), multi-language dictionaries.",
   "type": "module",

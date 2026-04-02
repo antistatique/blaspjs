@@ -1,4 +1,4 @@
-# blaspjs
+# @antistatique/blaspjs
 
 TypeScript / JavaScript library that ports the **language-agnostic core** of [Blaspsoft Blasp v4](https://github.com/Blaspsoft/blasp): driver-based profanity detection, severity scoring, masking, and multi-language dictionaries (English, Spanish, German, French). It is intended for Node.js and bundlers (ESM); the build targets modern browsers as well.
 
@@ -7,9 +7,9 @@ Blasp itself is a Laravel package; this project does **not** ship Laravel integr
 ## Installation
 
 ```bash
-npm install blaspjs
+npm install @antistatique/blaspjs
 # or
-bun add blaspjs
+bun add @antistatique/blaspjs
 ```
 
 Peer dependency: TypeScript `^5.0` (optional if you consume only JavaScript).
@@ -17,7 +17,7 @@ Peer dependency: TypeScript `^5.0` (optional if you consume only JavaScript).
 ## Quick start
 
 ```ts
-import { Blasp, Severity } from 'blaspjs';
+import { Blasp, Severity } from '@antistatique/blaspjs';
 
 const blasp = new Blasp();
 
@@ -83,7 +83,7 @@ Callback masks **disable** result caching (same idea as PHP: closures are not se
 ### Severity and lists
 
 ```ts
-import { Severity } from 'blaspjs';
+import { Severity } from '@antistatique/blaspjs';
 
 blasp.withSeverity(Severity.High).check(text); // drops milder matches before masking
 
@@ -101,7 +101,7 @@ blasp.checkMany({ a: 'x', b: 'y' }); // Record<string, Result>
 ### Custom drivers
 
 ```ts
-import type { Driver } from 'blaspjs';
+import type { Driver } from '@antistatique/blaspjs';
 
 const myDriver: Driver = {
   detect(text, dictionary, mask, options) {
@@ -151,7 +151,7 @@ Middleware / Eloquent / Blade keys exist on the type for parity with PHP config 
 ## Runtime options
 
 ```ts
-import { Blasp, MemoryCache } from 'blaspjs';
+import { Blasp, MemoryCache } from '@antistatique/blaspjs';
 
 const blasp = new Blasp(undefined, {
   cache: new MemoryCache(), // or your own CacheAdapter; pass null to disable internal cache
@@ -177,7 +177,7 @@ Requires `curl` and `php` on your PATH. This overwrites `src/languages/*.json` a
 
 ## API parity vs PHP Blasp
 
-| Feature | PHP ([Blasp v4](https://github.com/Blaspsoft/blasp)) | blaspjs |
+| Feature | PHP ([Blasp v4](https://github.com/Blaspsoft/blasp)) | @antistatique/blaspjs |
 | ------- | ---------------------------------------------------- | ------- |
 | Drivers: regex, pattern, phonetic, pipeline | Yes | Yes |
 | Fluent `PendingCheck` API | Yes | Yes |
