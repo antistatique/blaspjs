@@ -5,6 +5,7 @@ import { AVAILABLE_LANGUAGES, loadLanguageConfig } from '../languages/registry.j
 import { getNormalizerForLanguage } from './normalizers/index.js';
 import type { StringNormalizer } from './normalizers/types.js';
 import { RegexMatcher } from './regexMatcher.js';
+import { cpLen, utf8ByteLength } from './utf8.js';
 
 export type DictionaryOptions = {
   allow?: string[];
@@ -18,6 +19,8 @@ export class Dictionary {
   private readonly substitutions: Record<string, string[]>;
   private readonly severityMap: Map<string, SeverityT>;
   private readonly profanityExpressions: Map<string, RegExp>;
+  private readonly sortedProfanityExpressions: Array<[string, RegExp]>;
+  private readonly wordBoundaryExpressions: Array<[string, RegExp]>;
   private readonly normalizer: StringNormalizer;
   private readonly allowList: string[];
   private readonly blockList: string[];
@@ -62,6 +65,17 @@ export class Dictionary {
 
     this.profanityExpressions =
       profanityExpressions ?? new RegexMatcher().generateExpressions(this.profanities, this.separators, this.substitutions);
+
+    // Longest-first helps avoid substring masking issues in some flows.
+    this.sortedProfanityExpressions = [...this.profanityExpressions.entries()].sort(
+      (a, b) => utf8ByteLength(b[0]) - utf8ByteLength(a[0])
+    );
+
+    // Used by PatternDriver to avoid compiling a RegExp per profanity per call.
+    const escaped = (s: string) => s.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    this.wordBoundaryExpressions = [...this.profanities]
+      .sort((a, b) => cpLen(b) - cpLen(a))
+      .map(p => [p, new RegExp(`\\b${escaped(p)}\\b`, 'giu')] as [string, RegExp]);
   }
 
   getProfanities(): string[] {
@@ -74,6 +88,14 @@ export class Dictionary {
 
   getProfanityExpressions(): Map<string, RegExp> {
     return this.profanityExpressions;
+  }
+
+  getSortedProfanityExpressions(): Array<[string, RegExp]> {
+    return this.sortedProfanityExpressions;
+  }
+
+  getWordBoundaryExpressions(): Array<[string, RegExp]> {
+    return this.wordBoundaryExpressions;
   }
 
   getSeverity(word: string): SeverityT {

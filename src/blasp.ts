@@ -1,8 +1,10 @@
+import { LruCache } from './cache/lruCache.js';
 import { MemoryCache } from './cache/memoryCache.js';
 import type { CacheAdapter } from './cache/types.js';
 import { defaultBlaspConfig, mergeBlaspConfig } from './config/defaultConfig.js';
 import type { BlaspConfig } from './config/types.js';
 import type { Driver } from './core/contracts/driver.js';
+import type { Dictionary } from './core/dictionary.js';
 import { Result } from './core/result.js';
 import { PatternDriver } from './drivers/patternDriver.js';
 import { PhoneticDriver } from './drivers/phoneticDriver.js';
@@ -21,6 +23,7 @@ export class Blasp {
   private readonly config: BlaspConfig;
   private readonly customDrivers = new Map<string, () => Driver>();
   private readonly memoryCache = new MemoryCache();
+  private readonly dictionaryCache = new LruCache<string, Dictionary>(8);
   private readonly externalCache: CacheAdapter | null | undefined;
   private readonly onProfanityDetected?: (result: Result, originalText: string) => void;
 
@@ -50,6 +53,7 @@ export class Blasp {
 
   clearCaches(): void {
     this.memoryCache.clear();
+    this.dictionaryCache.clear();
   }
 
   driver(name?: string): PendingCheck {
@@ -92,6 +96,14 @@ export class Blasp {
 
   newPendingCheck(): PendingCheck {
     return new PendingCheck(this);
+  }
+
+  getDictionaryFromCache(key: string): Dictionary | undefined {
+    return this.dictionaryCache.get(key);
+  }
+
+  setDictionaryInCache(key: string, dictionary: Dictionary): void {
+    this.dictionaryCache.set(key, dictionary);
   }
 
   check(text: string | null | undefined): Result {

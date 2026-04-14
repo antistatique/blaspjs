@@ -178,23 +178,67 @@ export class PendingCheck {
 
   private buildDictionary(): Dictionary {
     const cfg = this.blasp.getConfig();
-    const opts = {
-      allow: [...cfg.allow, ...this.allowList],
-      block: [...cfg.block, ...this.blockList],
-    };
+    const effectiveAllow = [...cfg.allow, ...this.allowList];
+    const effectiveBlock = [...cfg.block, ...this.blockList];
+    const opts = { allow: effectiveAllow, block: effectiveBlock };
+
+    const cacheKey = this.buildDictionaryCacheKey(cfg, effectiveAllow, effectiveBlock);
+    const cached = this.blasp.getDictionaryFromCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     if (this.useAllLanguages) {
-      return Dictionary.forAllLanguages(cfg, opts);
+      const d = Dictionary.forAllLanguages(cfg, opts);
+      this.blasp.setDictionaryInCache(cacheKey, d);
+      return d;
     }
     if (this.languages.length > 0) {
       if (this.languages.length === 1) {
-        return Dictionary.forLanguage(this.languages[0]!, cfg, opts);
+        const d = Dictionary.forLanguage(this.languages[0]!, cfg, opts);
+        this.blasp.setDictionaryInCache(cacheKey, d);
+        return d;
       }
-      return Dictionary.forLanguages(this.languages, cfg, opts);
+      const d = Dictionary.forLanguages(this.languages, cfg, opts);
+      this.blasp.setDictionaryInCache(cacheKey, d);
+      return d;
     }
 
     const defaultLanguage = cfg.language || cfg.default_language || 'english';
-    return Dictionary.forLanguage(defaultLanguage, cfg, opts);
+    const d = Dictionary.forLanguage(defaultLanguage, cfg, opts);
+    this.blasp.setDictionaryInCache(cacheKey, d);
+    return d;
+  }
+
+  private buildDictionaryCacheKey(
+    cfg: ReturnType<Blasp['getConfig']>,
+    effectiveAllow: string[],
+    effectiveBlock: string[]
+  ): string {
+    const languagesKey = this.useAllLanguages
+      ? '__all__'
+      : this.languages.length > 0
+        ? [...this.languages]
+            .map(l => l.trim().toLowerCase())
+            .sort()
+            .join(',')
+        : String((cfg.language || cfg.default_language || 'english').trim().toLowerCase());
+
+    const allowKey = [...effectiveAllow].map(w => w.toLowerCase()).sort();
+    const blockKey = [...effectiveBlock].map(w => w.toLowerCase()).sort();
+
+    // Include the config parts that affect expression generation.
+    const configKey = cacheKeyHash({
+      separators: cfg.separators,
+      substitutions: cfg.substitutions,
+    });
+
+    return cacheKeyHash({
+      languages: languagesKey,
+      allow: allowKey,
+      block: blockKey,
+      config: configKey,
+    });
   }
 
   private resolveDriver() {

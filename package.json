@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsup --config tsup.config.ts",
     "export-languages": "./scripts/export-languages.sh",
+    "bench:check": "npm run build && node ./scripts/bench-check.mjs",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:run": "vitest run",

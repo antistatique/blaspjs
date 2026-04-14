@@ -4,7 +4,7 @@ import { Dictionary } from '../core/dictionary.js';
 import { MatchedWord } from '../core/matchedWord.js';
 import { Result } from '../core/result.js';
 import { calculateScore } from '../core/score.js';
-import { cpLen, cpSlice, utf16OffsetToCpIndex, utf16RangeToCpLength } from '../core/utf8.js';
+import { cpSlice, utf16OffsetToCpIndex, utf16RangeToCpLength } from '../core/utf8.js';
 import { severityIsAtLeast } from '../enums/severity.js';
 import type { Severity } from '../enums/severity.js';
 
@@ -16,13 +16,12 @@ export class PatternDriver implements Driver {
 
     const matchedWords: MatchedWord[] = [];
     const lowerText = text.toLowerCase();
-    const profanities = [...dictionary.getProfanities()].sort((a, b) => cpLen(b) - cpLen(a));
     const falsePositives = new Set(dictionary.getFalsePositives().map(fp => fp.toLowerCase()));
+    const wordBoundaryExpressions = dictionary.getWordBoundaryExpressions();
 
-    for (const profanity of profanities) {
+    for (const [profanity, re] of wordBoundaryExpressions) {
       const lowerProfanity = profanity.toLowerCase();
-      const escaped = lowerProfanity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const re = new RegExp(`\\b${escaped}\\b`, 'giu');
+      re.lastIndex = 0;
       const all = [...lowerText.matchAll(re)];
 
       for (const m of all) {

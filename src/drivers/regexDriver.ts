@@ -19,10 +19,8 @@ export class RegexDriver implements Driver {
     const filter = new FalsePositiveFilter(dictionary.getFalsePositives());
     const compoundDetector = new CompoundWordDetector();
 
-    let profanityExpressions = new Map(dictionary.getProfanityExpressions());
-    profanityExpressions = new Map(
-      [...profanityExpressions.entries()].sort((a, b) => textEncoder.encode(b[0]).length - textEncoder.encode(a[0]).length)
-    );
+    const profanityExpressionsMap = dictionary.getProfanityExpressions();
+    const profanityExpressions = dictionary.getSortedProfanityExpressions();
 
     const normalizer = dictionary.getNormalizer();
     let normalizedString = collapseWhitespace(normalizer.normalize(text));
@@ -37,9 +35,8 @@ export class RegexDriver implements Driver {
       normalizedString = collapseWhitespace(normalizedString);
 
       for (const [profanity, expression] of profanityExpressions) {
-        const flags = expression.flags.includes('g') ? expression.flags : `${expression.flags}g`;
-        const re = new RegExp(expression.source, flags);
-        const all = [...normalizedString.matchAll(re)];
+        expression.lastIndex = 0;
+        const all = [...normalizedString.matchAll(expression)];
 
         for (const m of all) {
           if (m.index === undefined) {
@@ -75,7 +72,7 @@ export class RegexDriver implements Driver {
 
           const fullWord = filter.getFullWordContext(normalizedString, byteStart, byteLength);
           const originalFullWord = filter.getFullWordContext(immutableNormalized, byteStart, byteLength);
-          if (compoundDetector.isPureAlphaSubstring(matchedText, originalFullWord, profanity, profanityExpressions)) {
+          if (compoundDetector.isPureAlphaSubstring(matchedText, originalFullWord, profanity, profanityExpressionsMap)) {
             continue;
           }
 
